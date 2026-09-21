@@ -4,9 +4,6 @@
 
 Albanuun is a private-feeling, mobile-first pregnancy companion for a husband and wife expecting their baby.
 
-Estimated due date: 4 April 2027  
-Current pregnancy stage: 12 weeks
-
 The app should feel personal, calm, useful, and reassuring — not like a generic pregnancy tracker.
 
 The existing pregnancy tracker already handles pregnancy week tracking and weekly baby development. Albanuun should complement it rather than duplicate it.
