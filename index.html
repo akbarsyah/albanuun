@@ -57,10 +57,11 @@
 							<h2 id="mom-title" data-mom-heading>How are you feeling today?</h2>
 						</div>
 						<div class="feeling-options" role="group" aria-label="How Mom is feeling today">
-							<button type="button" data-feeling="Good" aria-pressed="false">Good</button>
-							<button type="button" data-feeling="Okay" aria-pressed="false">Okay</button>
-							<button type="button" data-feeling="Rough" aria-pressed="false">Rough</button>
+							<button type="button" data-home-feeling="Good" aria-pressed="false">Good</button>
+							<button type="button" data-home-feeling="Okay" aria-pressed="false">Okay</button>
+							<button type="button" data-home-feeling="Rough" aria-pressed="false">Rough</button>
 						</div>
+						<button class="primary-button" type="button" data-action="view-mom">Open For Mom <span aria-hidden="true">&#8594;</span></button>
 					</section>
 
 					<section class="support-section" aria-labelledby="dad-title">
@@ -85,27 +86,90 @@
 			<section id="care" class="care-view" aria-labelledby="care-title" data-view-section="care" hidden>
 				<div class="care-heading">
 					<p class="eyebrow">Care</p>
-					<h1 id="care-title">Appointments</h1>
-					<p class="intro">Keep the important conversations and moments close at hand.</p>
+					<h1 id="care-title">A little care, close by.</h1>
+					<p class="intro">A quiet place for daily support and important conversations.</p>
 				</div>
-				<button class="save-button add-appointment-button" type="button" data-action="add-appointment">Add appointment <span aria-hidden="true">&#43;</span></button>
+				<div class="care-switcher" role="tablist" aria-label="Care sections">
+					<button class="care-switcher-button active" type="button" role="tab" aria-selected="true" data-action="show-mom">For Mom</button>
+					<button class="care-switcher-button" type="button" role="tab" aria-selected="false" data-action="show-appointments">Appointments</button>
+				</div>
 
-				<section class="appointment-group" aria-labelledby="upcoming-title">
-					<div class="group-heading">
-						<h2 id="upcoming-title">Upcoming</h2>
-						<span class="group-count" data-upcoming-count>0</span>
+				<section id="for-mom" class="mom-section" aria-labelledby="for-mom-title" data-care-feature="mom">
+					<div class="section-heading">
+						<p class="section-label">For Mom</p>
+						<h2 id="for-mom-title" data-mom-care-heading>How are you feeling today?</h2>
+						<p class="section-supporting-copy" data-mom-supporting-copy></p>
 					</div>
-					<div id="upcoming-appointments" class="appointment-list"></div>
-					<p class="list-empty" data-upcoming-empty>No upcoming appointments yet.</p>
+					<form id="checkin-form" class="checkin-form">
+						<fieldset class="checkin-fieldset">
+							<legend>Feeling</legend>
+							<div class="feeling-options checkin-feelings">
+								<label><input type="radio" name="feeling" value="Good" required><span>Good</span></label>
+								<label><input type="radio" name="feeling" value="Okay"><span>Okay</span></label>
+								<label><input type="radio" name="feeling" value="Rough"><span>Rough</span></label>
+							</div>
+						</fieldset>
+
+						<fieldset class="checkin-fieldset">
+							<legend>What would help? <span>(optional)</span></legend>
+							<div class="need-options">
+								<label><input type="checkbox" name="needs" value="Rest"><span>Rest</span></label>
+								<label><input type="checkbox" name="needs" value="Food"><span>Food</span></label>
+								<label><input type="checkbox" name="needs" value="Water"><span>Water</span></label>
+								<label><input type="checkbox" name="needs" value="Quiet"><span>Quiet</span></label>
+								<label><input type="checkbox" name="needs" value="Help"><span>Help</span></label>
+							</div>
+						</fieldset>
+
+						<div class="form-field">
+							<label for="checkin-note">Anything you want Dad to know? <span>(optional)</span></label>
+							<textarea id="checkin-note" name="note" rows="3" maxlength="240"></textarea>
+						</div>
+						<div class="settings-actions">
+							<button class="save-button" type="submit">Save today's check-in</button>
+						</div>
+						<p class="save-message" id="checkin-save-message" role="status" aria-live="polite"></p>
+					</form>
+
+					<div class="checkin-history" aria-labelledby="recent-checkins-title">
+						<div class="group-heading">
+							<h3 id="recent-checkins-title">Recent check-ins</h3>
+						</div>
+						<div id="checkin-history-list"></div>
+						<p class="list-empty" data-checkin-empty>No check-ins recorded yet.</p>
+					</div>
+					<button class="primary-button care-feature-link" type="button" data-action="show-appointments">Open Appointments <span aria-hidden="true">&#8594;</span></button>
 				</section>
 
-				<section class="appointment-group past-group" aria-labelledby="past-title">
-					<div class="group-heading">
-						<h2 id="past-title">Past</h2>
-						<span class="group-count" data-past-count>0</span>
+				<section class="care-appointments" aria-labelledby="appointments-title" data-care-feature="appointments" hidden>
+					<div class="care-subheading">
+						<div>
+							<p class="section-label">Appointments</p>
+							<h2 id="appointments-title">Keep the important moments close.</h2>
+						</div>
+						<div class="care-subheading-actions">
+							<button class="secondary-button" type="button" data-action="show-mom">For Mom</button>
+							<button class="save-button add-appointment-button" type="button" data-action="add-appointment">Add <span aria-hidden="true">&#43;</span></button>
+						</div>
 					</div>
-					<div id="past-appointments" class="appointment-list"></div>
-					<p class="list-empty" data-past-empty>No past appointments yet.</p>
+
+					<section class="appointment-group" aria-labelledby="upcoming-title">
+						<div class="group-heading">
+							<h2 id="upcoming-title">Upcoming</h2>
+							<span class="group-count" data-upcoming-count>0</span>
+						</div>
+						<div id="upcoming-appointments" class="appointment-list"></div>
+						<p class="list-empty" data-upcoming-empty>No upcoming appointments yet.</p>
+					</section>
+
+					<section class="appointment-group past-group" aria-labelledby="past-title">
+						<div class="group-heading">
+							<h2 id="past-title">Past</h2>
+							<span class="group-count" data-past-count>0</span>
+						</div>
+						<div id="past-appointments" class="appointment-list"></div>
+						<p class="list-empty" data-past-empty>No past appointments yet.</p>
+					</section>
 				</section>
 			</section>
 		</main>

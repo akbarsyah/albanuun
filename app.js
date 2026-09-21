@@ -9,6 +9,7 @@ const appState = {
 
 const storageKey = 'albanuun.settings';
 const appointmentsStorageKey = 'albanuun.appointments';
+const checkinsStorageKey = 'albanuun.checkins';
 const views = {
 	home: document.querySelector('#home'),
 	care: document.querySelector('#care'),
@@ -21,8 +22,11 @@ const appointmentForm = document.querySelector('#appointment-form');
 const homeSetup = document.querySelector('#home-setup');
 const homeContent = document.querySelector('#home-content');
 const setupNote = document.querySelector('#setup-note');
+const checkinForm = document.querySelector('#checkin-form');
+const forMomSection = document.querySelector('#for-mom');
 let pregnancy = null;
 let appointments = [];
+let checkins = [];
 let editingAppointmentId = null;
 
 function getDateParts(date) {
@@ -130,6 +134,120 @@ function formatDisplayDate(date) {
 
 function formatDuration(value, singular, plural = `${singular}s`) {
 	return `${value} ${value === 1 ? singular : plural}`;
+}
+
+function getLocalDateKey(date = new Date()) {
+	const { year, month, day } = getDateParts(date);
+	return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function loadCheckins() {
+	try {
+		const savedCheckins = JSON.parse(localStorage.getItem(checkinsStorageKey));
+		if (Array.isArray(savedCheckins)) {
+			checkins = savedCheckins
+				.filter((checkin) => checkin && typeof checkin === 'object')
+				.map((checkin) => ({
+					date: typeof checkin.date === 'string' ? checkin.date : '',
+					feeling: ['Good', 'Okay', 'Rough'].includes(checkin.feeling) ? checkin.feeling : '',
+					needs: Array.isArray(checkin.needs) ? checkin.needs.filter((need) => ['Rest', 'Food', 'Water', 'Quiet', 'Help'].includes(need)) : [],
+					note: typeof checkin.note === 'string' ? checkin.note : '',
+				}));
+		}
+	} catch (error) {
+		console.warn('Albanuun check-ins could not be loaded.', error);
+	}
+}
+
+function saveCheckins() {
+	try {
+		localStorage.setItem(checkinsStorageKey, JSON.stringify(checkins));
+	} catch (error) {
+		console.warn('Albanuun check-ins could not be saved.', error);
+	}
+}
+
+function getTodayCheckin() {
+	return checkins.find((checkin) => checkin.date === getLocalDateKey());
+}
+
+function fillTodayCheckin() {
+	const todayCheckin = getTodayCheckin();
+	checkinForm.reset();
+	if (!todayCheckin) {
+		return;
+	}
+	const feeling = checkinForm.querySelector(`input[name="feeling"][value="${todayCheckin.feeling}"]`);
+	if (feeling) {
+		feeling.checked = true;
+	}
+	todayCheckin.needs.forEach((need) => {
+		const input = checkinForm.querySelector(`input[name="needs"][value="${need}"]`);
+		if (input) {
+			input.checked = true;
+		}
+	});
+	checkinForm.elements.namedItem('note').value = todayCheckin.note;
+}
+
+function createCheckinHistoryItem(checkin) {
+	const item = document.createElement('article');
+	item.className = 'checkin-history-item';
+	const date = document.createElement('p');
+	date.className = 'checkin-history-date';
+	date.textContent = checkin.date === getLocalDateKey() ? 'Today' : formatDisplayDate(parseDateInput(checkin.date));
+	const feeling = document.createElement('h4');
+	feeling.textContent = checkin.feeling;
+	item.append(date, feeling);
+	if (checkin.needs.length > 0) {
+		const needs = document.createElement('p');
+		needs.className = 'checkin-history-needs';
+		needs.textContent = `Would help: ${checkin.needs.join(', ')}`;
+		item.append(needs);
+	}
+	if (checkin.note) {
+		const note = document.createElement('p');
+		note.className = 'checkin-history-note';
+		note.textContent = checkin.note;
+		item.append(note);
+	}
+	return item;
+}
+
+function renderCheckin() {
+	const todayCheckin = getTodayCheckin();
+	const historyList = document.querySelector('#checkin-history-list');
+	const sortedCheckins = [...checkins].sort((first, second) => second.date.localeCompare(first.date));
+	historyList.replaceChildren(...sortedCheckins.map(createCheckinHistoryItem));
+	document.querySelector('[data-checkin-empty]').hidden = sortedCheckins.length > 0;
+	fillTodayCheckin();
+	document.querySelector('[data-mom-care-heading]').textContent = appState.momName
+		? `How are you feeling today, ${appState.momName}?`
+		: 'How are you feeling today?';
+	document.querySelector('[data-mom-supporting-copy]').textContent = appState.dadName
+		? `A small daily check-in for ${appState.dadName} to listen and support.`
+		: 'A small daily check-in to help Dad listen and support.';
+	return todayCheckin;
+}
+
+function saveTodayCheckin(event) {
+	event.preventDefault();
+	const formData = new FormData(checkinForm);
+	const savedCheckin = {
+		date: getLocalDateKey(),
+		feeling: formData.get('feeling'),
+		needs: formData.getAll('needs'),
+		note: String(formData.get('note') || '').trim(),
+	};
+	checkins = checkins.some((checkin) => checkin.date === savedCheckin.date)
+		? checkins.map((checkin) => checkin.date === savedCheckin.date ? savedCheckin : checkin)
+		: [...checkins, savedCheckin];
+	saveCheckins();
+	renderCheckin();
+	renderHome();
+	const message = document.querySelector('#checkin-save-message');
+	message.textContent = 'Today\'s check-in saved.';
+	window.setTimeout(() => { message.textContent = ''; }, 1800);
 }
 
 function createAppointmentId() {
@@ -286,6 +404,7 @@ function renderHomeAppointment() {
 function renderHome() {
 	const isConfigured = pregnancy.isConfigured;
 	renderHomeAppointment();
+	const todayCheckin = renderCheckin();
 	homeSetup.hidden = isConfigured;
 	homeContent.hidden = !isConfigured;
 	setupNote.hidden = isConfigured;
@@ -305,9 +424,26 @@ function renderHome() {
 	document.querySelector('[data-mom-heading]').textContent = appState.momName
 		? `How are you feeling today, ${appState.momName}?`
 		: 'How are you feeling today?';
+	document.querySelectorAll('[data-home-feeling]').forEach((button) => {
+		button.setAttribute('aria-pressed', todayCheckin?.feeling === button.dataset.homeFeeling ? 'true' : 'false');
+	});
 	document.querySelector('[data-dad-heading]').textContent = appState.dadName
 		? `For Dad, ${appState.dadName}`
 		: 'For Dad';
+}
+
+function setCareFeature(featureName) {
+	const isMom = featureName === 'mom';
+	document.querySelectorAll('[data-care-feature]').forEach((feature) => {
+		feature.hidden = feature.dataset.careFeature !== featureName;
+	});
+	document.querySelectorAll('[data-action="show-mom"], [data-action="show-appointments"]').forEach((button) => {
+		const isSelected = (isMom && button.dataset.action === 'show-mom') || (!isMom && button.dataset.action === 'show-appointments');
+		if (button.classList.contains('care-switcher-button')) {
+			button.classList.toggle('active', isSelected);
+			button.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+		}
+	});
 }
 
 function loadSettings() {
@@ -368,7 +504,7 @@ function saveSettings(event) {
 	}, 700);
 }
 
-function setActiveView(viewName) {
+function setActiveView(viewName, careFeature = 'mom') {
 	document.querySelectorAll('[data-view]').forEach((link) => {
 		const isActive = link.dataset.view === viewName;
 		link.classList.toggle('active', isActive);
@@ -381,6 +517,9 @@ function setActiveView(viewName) {
 	Object.entries(views).forEach(([name, view]) => {
 		view.hidden = name !== viewName;
 	});
+	if (viewName === 'care') {
+		setCareFeature(careFeature);
+	}
 }
 
 function openAppointmentForm(appointmentId = null) {
@@ -464,7 +603,22 @@ document.querySelectorAll('[data-action="settings"]').forEach((button) => {
 });
 
 document.querySelectorAll('[data-action="view-care"]').forEach((button) => {
-	button.addEventListener('click', () => setActiveView('care'));
+	button.addEventListener('click', () => setActiveView('care', 'appointments'));
+});
+
+document.querySelectorAll('[data-action="view-mom"]').forEach((button) => {
+	button.addEventListener('click', () => {
+		setActiveView('care', 'mom');
+		forMomSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	});
+});
+
+document.querySelectorAll('[data-action="show-mom"]').forEach((button) => {
+	button.addEventListener('click', () => setCareFeature('mom'));
+});
+
+document.querySelectorAll('[data-action="show-appointments"]').forEach((button) => {
+	button.addEventListener('click', () => setCareFeature('appointments'));
 });
 
 document.querySelectorAll('[data-action="close-settings"]').forEach((button) => {
@@ -509,19 +663,23 @@ careView.addEventListener('click', (event) => {
 	}
 });
 
-document.querySelectorAll('[data-feeling]').forEach((button) => {
+document.querySelectorAll('[data-home-feeling]').forEach((button) => {
 	button.addEventListener('click', () => {
-		document.querySelectorAll('[data-feeling]').forEach((option) => {
+		document.querySelectorAll('[data-home-feeling]').forEach((option) => {
 			option.setAttribute('aria-pressed', option === button ? 'true' : 'false');
 		});
 	});
 });
 
+checkinForm.addEventListener('submit', saveTodayCheckin);
+
 loadSettings();
 loadAppointments();
+loadCheckins();
 refreshPregnancy();
 renderHome();
 renderAppointments();
+renderCheckin();
 setActiveView('home');
 
 window.albanuun = {
