@@ -8,15 +8,22 @@ const appState = {
 };
 
 const storageKey = 'albanuun.settings';
+const appointmentsStorageKey = 'albanuun.appointments';
 const views = {
 	home: document.querySelector('#home'),
+	care: document.querySelector('#care'),
 };
 const settingsDialog = document.querySelector('#settings-dialog');
 const settingsForm = document.querySelector('#settings-form');
+const careView = document.querySelector('#care');
+const appointmentDialog = document.querySelector('#appointment-dialog');
+const appointmentForm = document.querySelector('#appointment-form');
 const homeSetup = document.querySelector('#home-setup');
 const homeContent = document.querySelector('#home-content');
 const setupNote = document.querySelector('#setup-note');
 let pregnancy = null;
+let appointments = [];
+let editingAppointmentId = null;
 
 function getDateParts(date) {
 	return {
@@ -125,8 +132,160 @@ function formatDuration(value, singular, plural = `${singular}s`) {
 	return `${value} ${value === 1 ? singular : plural}`;
 }
 
+function createAppointmentId() {
+	return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+		? crypto.randomUUID()
+		: `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function formatAppointmentTime(value) {
+	const [hour, minute] = value.split(':').map(Number);
+	return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(2000, 0, 1, hour, minute));
+}
+
+function getAppointmentTimestamp(appointment) {
+	const date = parseDateInput(appointment.date);
+	if (!date || !/^\d{2}:\d{2}$/.test(appointment.time)) {
+		return Number.POSITIVE_INFINITY;
+	}
+	const [hour, minute] = appointment.time.split(':').map(Number);
+	date.setHours(hour, minute, 0, 0);
+	return date.getTime();
+}
+
+function getAppointmentGroups() {
+	const now = Date.now();
+	const upcoming = appointments
+		.filter((appointment) => !appointment.completed && getAppointmentTimestamp(appointment) >= now)
+		.sort((first, second) => getAppointmentTimestamp(first) - getAppointmentTimestamp(second));
+	const past = appointments
+		.filter((appointment) => appointment.completed || getAppointmentTimestamp(appointment) < now)
+		.sort((first, second) => getAppointmentTimestamp(second) - getAppointmentTimestamp(first));
+	return { upcoming, past };
+}
+
+function saveAppointments() {
+	try {
+		localStorage.setItem(appointmentsStorageKey, JSON.stringify(appointments));
+	} catch (error) {
+		console.warn('Albanuun appointments could not be saved.', error);
+	}
+}
+
+function loadAppointments() {
+	try {
+		const savedAppointments = JSON.parse(localStorage.getItem(appointmentsStorageKey));
+		if (Array.isArray(savedAppointments)) {
+			appointments = savedAppointments
+				.filter((appointment) => appointment && typeof appointment === 'object')
+				.map((appointment) => ({
+					id: typeof appointment.id === 'string' ? appointment.id : createAppointmentId(),
+					title: typeof appointment.title === 'string' ? appointment.title : '',
+					date: typeof appointment.date === 'string' ? appointment.date : '',
+					time: typeof appointment.time === 'string' ? appointment.time : '',
+					provider: typeof appointment.provider === 'string' ? appointment.provider : '',
+					location: typeof appointment.location === 'string' ? appointment.location : '',
+					notes: typeof appointment.notes === 'string' ? appointment.notes : '',
+					questions: typeof appointment.questions === 'string' ? appointment.questions : '',
+					completed: appointment.completed === true,
+				}));
+		}
+	} catch (error) {
+		console.warn('Albanuun appointments could not be loaded.', error);
+	}
+}
+
+function addAppointmentDetail(parent, label, value) {
+	if (!value) {
+		return;
+	}
+	const detail = document.createElement('span');
+	detail.className = 'appointment-detail';
+	detail.textContent = `${label}: ${value}`;
+	parent.append(detail);
+}
+
+function createAppointmentCard(appointment) {
+	const card = document.createElement('article');
+	card.className = `appointment-card${appointment.completed ? ' is-completed' : ''}`;
+
+	const heading = document.createElement('div');
+	heading.className = 'appointment-card-heading';
+	const title = document.createElement('h3');
+	title.textContent = appointment.title;
+	heading.append(title);
+	if (appointment.completed) {
+		const status = document.createElement('span');
+		status.className = 'appointment-status';
+		status.textContent = 'Completed';
+		heading.append(status);
+	}
+	card.append(heading);
+
+	const when = document.createElement('p');
+	when.className = 'appointment-when';
+	when.textContent = `${formatDisplayDate(parseDateInput(appointment.date))} at ${formatAppointmentTime(appointment.time)}`;
+	card.append(when);
+
+	const details = document.createElement('div');
+	details.className = 'appointment-details';
+	addAppointmentDetail(details, 'Provider', appointment.provider);
+	addAppointmentDetail(details, 'Location', appointment.location);
+	addAppointmentDetail(details, 'Notes', appointment.notes);
+	addAppointmentDetail(details, 'Questions', appointment.questions);
+	card.append(details);
+
+	const actions = document.createElement('div');
+	actions.className = 'appointment-actions';
+	[
+		{ action: 'toggle-appointment', label: appointment.completed ? 'Mark upcoming' : 'Mark completed' },
+		{ action: 'edit-appointment', label: 'Edit' },
+		{ action: 'delete-appointment', label: 'Delete' },
+	].forEach(({ action, label }) => {
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.className = action === 'delete-appointment' ? 'text-button danger-button' : 'text-button';
+		button.dataset.action = action;
+		button.dataset.id = appointment.id;
+		button.textContent = label;
+		actions.append(button);
+	});
+	card.append(actions);
+	return card;
+}
+
+function renderAppointments() {
+	const { upcoming, past } = getAppointmentGroups();
+	const upcomingList = document.querySelector('#upcoming-appointments');
+	const pastList = document.querySelector('#past-appointments');
+	upcomingList.replaceChildren(...upcoming.map(createAppointmentCard));
+	pastList.replaceChildren(...past.map(createAppointmentCard));
+	document.querySelector('[data-upcoming-count]').textContent = upcoming.length;
+	document.querySelector('[data-past-count]').textContent = past.length;
+	document.querySelector('[data-upcoming-empty]').hidden = upcoming.length > 0;
+	document.querySelector('[data-past-empty]').hidden = past.length > 0;
+}
+
+function renderHomeAppointment() {
+	const { upcoming } = getAppointmentGroups();
+	const title = document.querySelector('[data-home-appointment-title]');
+	const details = document.querySelector('[data-home-appointment-details]');
+	const viewButton = document.querySelector('[data-action="view-care"]');
+	const nextAppointment = upcoming[0];
+	if (!nextAppointment) {
+		title.textContent = 'Nothing scheduled yet.';
+		details.textContent = 'Appointments you add later will appear here.';
+		viewButton.hidden = true;
+		return;
+	}
+	title.textContent = nextAppointment.title;
+	details.textContent = `${formatDisplayDate(parseDateInput(nextAppointment.date))} at ${formatAppointmentTime(nextAppointment.time)}${nextAppointment.provider ? ` · ${nextAppointment.provider}` : ''}`;
+	viewButton.hidden = false;
+}
+
 function renderHome() {
 	const isConfigured = pregnancy.isConfigured;
+	renderHomeAppointment();
 	homeSetup.hidden = isConfigured;
 	homeContent.hidden = !isConfigured;
 	setupNote.hidden = isConfigured;
@@ -219,6 +378,74 @@ function setActiveView(viewName) {
 			link.removeAttribute('aria-current');
 		}
 	});
+	Object.entries(views).forEach(([name, view]) => {
+		view.hidden = name !== viewName;
+	});
+}
+
+function openAppointmentForm(appointmentId = null) {
+	editingAppointmentId = appointmentId;
+	appointmentForm.reset();
+	const appointment = appointments.find((item) => item.id === appointmentId);
+	if (appointment) {
+		Object.keys(appointment).forEach((key) => {
+			const field = appointmentForm.elements.namedItem(key);
+			if (field && typeof appointment[key] === 'string') {
+				field.value = appointment[key];
+			}
+		});
+	}
+	document.querySelector('#appointment-form-title').textContent = appointment ? 'Edit appointment' : 'Add appointment';
+	appointmentDialog.showModal();
+}
+
+function closeAppointmentForm() {
+	appointmentDialog.close();
+	editingAppointmentId = null;
+}
+
+function saveAppointment(event) {
+	event.preventDefault();
+	const formData = new FormData(appointmentForm);
+	const details = Object.fromEntries(['title', 'date', 'time', 'provider', 'location', 'notes', 'questions'].map((key) => {
+		const value = formData.get(key);
+		return [key, typeof value === 'string' ? value.trim() : ''];
+	}));
+	const existingAppointment = appointments.find((appointment) => appointment.id === editingAppointmentId);
+	const savedAppointment = {
+		id: editingAppointmentId || createAppointmentId(),
+		...details,
+		completed: existingAppointment ? existingAppointment.completed : false,
+	};
+	if (existingAppointment) {
+		appointments = appointments.map((appointment) => appointment.id === editingAppointmentId ? savedAppointment : appointment);
+	} else {
+		appointments.push(savedAppointment);
+	}
+	saveAppointments();
+	renderAppointments();
+	renderHomeAppointment();
+	closeAppointmentForm();
+}
+
+function toggleAppointment(appointmentId) {
+	appointments = appointments.map((appointment) => appointment.id === appointmentId
+		? { ...appointment, completed: !appointment.completed }
+		: appointment);
+	saveAppointments();
+	renderAppointments();
+	renderHomeAppointment();
+}
+
+function deleteAppointment(appointmentId) {
+	const appointment = appointments.find((item) => item.id === appointmentId);
+	if (!appointment || !window.confirm(`Delete "${appointment.title}"?`)) {
+		return;
+	}
+	appointments = appointments.filter((item) => item.id !== appointmentId);
+	saveAppointments();
+	renderAppointments();
+	renderHomeAppointment();
 }
 
 document.querySelectorAll('[data-view]').forEach((link) => {
@@ -236,6 +463,10 @@ document.querySelectorAll('[data-action="settings"]').forEach((button) => {
 	button.addEventListener('click', openSettings);
 });
 
+document.querySelectorAll('[data-action="view-care"]').forEach((button) => {
+	button.addEventListener('click', () => setActiveView('care'));
+});
+
 document.querySelectorAll('[data-action="close-settings"]').forEach((button) => {
 	button.addEventListener('click', closeSettings);
 });
@@ -244,6 +475,37 @@ settingsForm.addEventListener('submit', saveSettings);
 settingsDialog.addEventListener('click', (event) => {
 	if (event.target === settingsDialog) {
 		closeSettings();
+	}
+});
+
+document.querySelectorAll('[data-action="add-appointment"]').forEach((button) => {
+	button.addEventListener('click', () => openAppointmentForm());
+});
+
+document.querySelectorAll('[data-action="close-appointment"]').forEach((button) => {
+	button.addEventListener('click', closeAppointmentForm);
+});
+
+appointmentForm.addEventListener('submit', saveAppointment);
+appointmentDialog.addEventListener('click', (event) => {
+	if (event.target === appointmentDialog) {
+		closeAppointmentForm();
+	}
+});
+
+careView.addEventListener('click', (event) => {
+	const button = event.target.closest('[data-action]');
+	if (!button || !button.dataset.id) {
+		return;
+	}
+	if (button.dataset.action === 'edit-appointment') {
+		openAppointmentForm(button.dataset.id);
+	}
+	if (button.dataset.action === 'toggle-appointment') {
+		toggleAppointment(button.dataset.id);
+	}
+	if (button.dataset.action === 'delete-appointment') {
+		deleteAppointment(button.dataset.id);
 	}
 });
 
@@ -256,8 +518,11 @@ document.querySelectorAll('[data-feeling]').forEach((button) => {
 });
 
 loadSettings();
+loadAppointments();
 refreshPregnancy();
 renderHome();
+renderAppointments();
+setActiveView('home');
 
 window.albanuun = {
 	appState,

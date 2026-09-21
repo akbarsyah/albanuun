@@ -24,7 +24,7 @@
 		</header>
 
 		<main id="app" class="app-main">
-			<section id="home" class="home-view" aria-labelledby="welcome-title">
+			<section id="home" class="home-view" aria-labelledby="welcome-title" data-view-section="home">
 				<p class="eyebrow">Your shared journey</p>
 				<div id="home-setup" class="setup-panel" role="status" hidden>
 					<div class="setup-mark" aria-hidden="true">
@@ -68,20 +68,96 @@
 						<h2 id="dad-title" class="support-quote">Ask her how she’s feeling before trying to solve anything.</h2>
 					</section>
 
-					<section class="appointment-section" aria-labelledby="appointment-title">
+					<section class="appointment-section" aria-labelledby="home-appointment-title">
 						<p class="section-label">Next appointment</p>
-						<h2 id="appointment-title">Nothing scheduled yet.</h2>
-						<p>Appointments you add later will appear here.</p>
+						<h2 id="home-appointment-title" data-home-appointment-title>Nothing scheduled yet.</h2>
+						<p data-home-appointment-details>Appointments you add later will appear here.</p>
+						<button class="primary-button" type="button" data-action="view-care" hidden>View appointment <span aria-hidden="true">&#8594;</span></button>
 					</section>
 				</div>
 
 				<div class="quiet-note" id="setup-note" hidden>
 					<span class="note-line" aria-hidden="true"></span>
 					<p>Nothing is set yet. Take your time.</p>
-				</section>
 				</div>
 			</section>
+
+			<section id="care" class="care-view" aria-labelledby="care-title" data-view-section="care" hidden>
+				<div class="care-heading">
+					<p class="eyebrow">Care</p>
+					<h1 id="care-title">Appointments</h1>
+					<p class="intro">Keep the important conversations and moments close at hand.</p>
+				</div>
+				<button class="save-button add-appointment-button" type="button" data-action="add-appointment">Add appointment <span aria-hidden="true">&#43;</span></button>
+
+				<section class="appointment-group" aria-labelledby="upcoming-title">
+					<div class="group-heading">
+						<h2 id="upcoming-title">Upcoming</h2>
+						<span class="group-count" data-upcoming-count>0</span>
+					</div>
+					<div id="upcoming-appointments" class="appointment-list"></div>
+					<p class="list-empty" data-upcoming-empty>No upcoming appointments yet.</p>
+				</section>
+
+				<section class="appointment-group past-group" aria-labelledby="past-title">
+					<div class="group-heading">
+						<h2 id="past-title">Past</h2>
+						<span class="group-count" data-past-count>0</span>
+					</div>
+					<div id="past-appointments" class="appointment-list"></div>
+					<p class="list-empty" data-past-empty>No past appointments yet.</p>
+				</section>
+			</section>
 		</main>
+
+		<dialog class="appointment-dialog" id="appointment-dialog" aria-labelledby="appointment-form-title">
+			<div class="settings-header">
+				<div>
+					<p class="eyebrow">Care</p>
+					<h2 id="appointment-form-title">Add appointment</h2>
+				</div>
+				<button class="close-button" type="button" aria-label="Close appointment form" data-action="close-appointment">&times;</button>
+			</div>
+
+			<form id="appointment-form">
+				<input type="hidden" name="id">
+				<div class="form-field">
+					<label for="appointment-title">Title / appointment type</label>
+					<input id="appointment-title" name="title" type="text" required autocomplete="off">
+				</div>
+				<div class="form-row">
+					<div class="form-field">
+						<label for="appointment-date">Date</label>
+						<input id="appointment-date" name="date" type="date" required>
+					</div>
+					<div class="form-field">
+						<label for="appointment-time">Time</label>
+						<input id="appointment-time" name="time" type="time" required>
+					</div>
+				</div>
+				<div class="form-field">
+					<label for="appointment-provider">Doctor / provider <span>(optional)</span></label>
+					<input id="appointment-provider" name="provider" type="text" autocomplete="organization">
+				</div>
+				<div class="form-field">
+					<label for="appointment-location">Location <span>(optional)</span></label>
+					<input id="appointment-location" name="location" type="text" autocomplete="street-address">
+				</div>
+				<div class="form-field">
+					<label for="appointment-notes">Notes <span>(optional)</span></label>
+					<textarea id="appointment-notes" name="notes" rows="3"></textarea>
+				</div>
+				<div class="form-field">
+					<label for="appointment-questions">Questions to ask <span>(optional)</span></label>
+					<textarea id="appointment-questions" name="questions" rows="3"></textarea>
+				</div>
+				<div class="settings-actions">
+					<button class="secondary-button" type="button" data-action="close-appointment">Cancel</button>
+					<button class="save-button" type="submit">Save appointment</button>
+				</div>
+				<p class="save-message" id="appointment-save-message" role="status" aria-live="polite"></p>
+			</form>
+		</dialog>
 
 		<dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
 			<div class="settings-header">
