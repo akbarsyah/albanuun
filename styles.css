@@ -214,6 +214,15 @@ h2 { margin-bottom: 9px; font-family: Newsreader, Georgia, serif; font-size: 1.4
 .secondary-button, .save-button { min-height: 44px; padding: 10px 16px; border-radius: 4px; font: 600 0.8rem "DM Sans", sans-serif; cursor: pointer; }
 .secondary-button { border: 1px solid var(--line); color: var(--muted); background: transparent; }
 .save-button { border: 1px solid var(--sage); color: var(--surface); background: var(--sage); }
+.reset-data-area { margin-top: 34px; padding-top: 24px; border-top: 1px solid var(--line); }
+.reset-data-area .section-label { margin-bottom: 8px; }
+.reset-data-area p:not(.section-label) { margin-bottom: 12px; color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
+.reset-data-area .text-button { font-size: 0.76rem; }
+.reset-dialog { width: min(100% - 32px, 440px); margin: auto; padding: 28px 24px 24px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); box-shadow: 0 24px 60px rgba(43, 45, 38, 0.16); }
+.reset-dialog::backdrop { background: rgba(37, 40, 36, 0.35); }
+.reset-dialog h2 { margin-bottom: 12px; font-size: 2rem; }
+.reset-message { margin-bottom: 0; color: var(--muted); font-size: 0.88rem; line-height: 1.55; }
+.reset-button { min-height: 44px; padding: 10px 16px; border: 1px solid #8b6258; border-radius: 4px; color: var(--surface); background: #8b6258; font: 600 0.8rem "DM Sans", sans-serif; cursor: pointer; }
 .save-message { min-height: 1.3em; margin: 12px 0 0; color: var(--sage); font-size: 0.76rem; text-align: right; }
 
 .bottom-nav { position: fixed; right: 0; bottom: 0; left: 0; display: flex; justify-content: center; gap: clamp(28px, 12vw, 70px); padding: 13px 24px calc(13px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: rgba(245, 241, 234, 0.96); }

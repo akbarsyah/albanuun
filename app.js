@@ -11,12 +11,14 @@ const storageKey = 'albanuun.settings';
 const appointmentsStorageKey = 'albanuun.appointments';
 const checkinsStorageKey = 'albanuun.checkins';
 const dadNoteStorageKey = 'albanuun.dad-note';
+const albanuunStorageKeys = [storageKey, appointmentsStorageKey, checkinsStorageKey, dadNoteStorageKey];
 const views = {
 	home: document.querySelector('#home'),
 	care: document.querySelector('#care'),
 };
 const settingsDialog = document.querySelector('#settings-dialog');
 const settingsForm = document.querySelector('#settings-form');
+const resetDialog = document.querySelector('#reset-dialog');
 const careView = document.querySelector('#care');
 const appointmentDialog = document.querySelector('#appointment-dialog');
 const appointmentForm = document.querySelector('#appointment-form');
@@ -539,13 +541,9 @@ function clearDadNote() {
 function loadSettings() {
 	try {
 		const savedSettings = JSON.parse(localStorage.getItem(storageKey));
-		if (savedSettings && typeof savedSettings === 'object') {
-			Object.keys(appState).forEach((key) => {
-				if (typeof savedSettings[key] === 'string') {
-					appState[key] = savedSettings[key];
-				}
-			});
-		}
+		Object.keys(appState).forEach((key) => {
+			appState[key] = savedSettings && typeof savedSettings[key] === 'string' ? savedSettings[key] : null;
+		});
 	} catch (error) {
 		console.warn('Albanuun settings could not be loaded.', error);
 	}
@@ -567,6 +565,31 @@ function openSettings() {
 
 function closeSettings() {
 	settingsDialog.close();
+}
+
+function openResetDialog() {
+	resetDialog.showModal();
+}
+
+function closeResetDialog() {
+	resetDialog.close();
+}
+
+function resetAllData() {
+	albanuunStorageKeys.forEach((key) => localStorage.removeItem(key));
+	Object.keys(appState).forEach((key) => {
+		appState[key] = null;
+	});
+	appointments = [];
+	checkins = [];
+	dadNote = '';
+	refreshPregnancy();
+	renderHome();
+	renderAppointments();
+	renderCheckin();
+	renderDadMode();
+	settingsDialog.close();
+	resetDialog.close();
 }
 
 function saveSettings(event) {
@@ -724,6 +747,15 @@ settingsForm.addEventListener('submit', saveSettings);
 settingsDialog.addEventListener('click', (event) => {
 	if (event.target === settingsDialog) {
 		closeSettings();
+	}
+});
+
+document.querySelector('[data-action="open-reset"]').addEventListener('click', openResetDialog);
+document.querySelector('[data-action="close-reset"]').addEventListener('click', closeResetDialog);
+document.querySelector('[data-action="confirm-reset"]').addEventListener('click', resetAllData);
+resetDialog.addEventListener('click', (event) => {
+	if (event.target === resetDialog) {
+		closeResetDialog();
 	}
 });
 

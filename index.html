@@ -292,7 +292,7 @@
 				</div>
 				<div class="form-field">
 					<label for="due-date">Estimated due date</label>
-					<input id="due-date" name="dueDate" type="date" required>
+					<input id="due-date" name="dueDate" type="date">
 				</div>
 				<div class="form-field">
 					<label for="lmp">LMP <span>(optional)</span></label>
@@ -309,6 +309,21 @@
 				</div>
 				<p class="save-message" id="save-message" role="status" aria-live="polite"></p>
 			</form>
+			<div class="reset-data-area">
+				<p class="section-label">Private data</p>
+				<p>Remove all Albanuun details saved on this device.</p>
+				<button class="text-button danger-button" type="button" data-action="open-reset">Reset all data</button>
+			</div>
+		</dialog>
+
+		<dialog class="reset-dialog" id="reset-dialog" aria-labelledby="reset-title">
+			<p class="eyebrow">Private data</p>
+			<h2 id="reset-title">Reset Albanuun?</h2>
+			<p class="reset-message">This will remove your names, pregnancy details, appointments, check-ins, Dad Mode notes, and other data stored on this device. This cannot be undone.</p>
+			<div class="settings-actions">
+				<button class="secondary-button" type="button" data-action="close-reset">Cancel</button>
+				<button class="reset-button" type="button" data-action="confirm-reset">Reset all data</button>
+			</div>
 		</dialog>
 
 		<nav class="bottom-nav" aria-label="Primary navigation">
