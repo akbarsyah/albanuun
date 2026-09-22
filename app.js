@@ -11,8 +11,10 @@ const storageKey = 'albanuun.settings';
 const appointmentsStorageKey = 'albanuun.appointments';
 const checkinsStorageKey = 'albanuun.checkins';
 const dadNoteStorageKey = 'albanuun.dad-note';
-const albanuunStorageKeys = [storageKey, appointmentsStorageKey, checkinsStorageKey, dadNoteStorageKey];
+const milestonesStorageKey = 'albanuun.milestones';
+const albanuunStorageKeys = [storageKey, appointmentsStorageKey, checkinsStorageKey, dadNoteStorageKey, milestonesStorageKey];
 const views = {
+	journey: document.querySelector('#journey'),
 	home: document.querySelector('#home'),
 	care: document.querySelector('#care'),
 };
@@ -27,12 +29,17 @@ const homeContent = document.querySelector('#home-content');
 const setupNote = document.querySelector('#setup-note');
 const checkinForm = document.querySelector('#checkin-form');
 const dadNoteForm = document.querySelector('#dad-note-form');
+const journeyView = document.querySelector('#journey');
+const milestoneDialog = document.querySelector('#milestone-dialog');
+const milestoneForm = document.querySelector('#milestone-form');
 const forMomSection = document.querySelector('#for-mom');
 let pregnancy = null;
 let appointments = [];
 let checkins = [];
 let editingAppointmentId = null;
 let dadNote = '';
+let milestones = [];
+let editingMilestoneId = null;
 
 function getDateParts(date) {
 	return {
@@ -146,6 +153,12 @@ function getLocalDateKey(date = new Date()) {
 	return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+function addCalendarDays(date, days) {
+	const result = new Date(date);
+	result.setDate(result.getDate() + days);
+	return result;
+}
+
 function loadCheckins() {
 	try {
 		const savedCheckins = JSON.parse(localStorage.getItem(checkinsStorageKey));
@@ -187,6 +200,142 @@ function saveDadNote() {
 	} catch (error) {
 		console.warn('Albanuun Dad Mode note could not be saved.', error);
 	}
+}
+
+function loadMilestones() {
+	try {
+		const savedMilestones = JSON.parse(localStorage.getItem(milestonesStorageKey));
+		if (Array.isArray(savedMilestones)) {
+			milestones = savedMilestones
+				.filter((milestone) => milestone && typeof milestone === 'object')
+				.map((milestone) => ({
+					id: typeof milestone.id === 'string' ? milestone.id : createAppointmentId(),
+					title: typeof milestone.title === 'string' ? milestone.title.trim() : '',
+					date: typeof milestone.date === 'string' ? milestone.date : '',
+					note: typeof milestone.note === 'string' ? milestone.note : '',
+				}))
+				.filter((milestone) => milestone.title && parseDateInput(milestone.date));
+		}
+	} catch (error) {
+		console.warn('Albanuun milestones could not be loaded.', error);
+	}
+}
+
+function saveMilestones() {
+	try {
+		localStorage.setItem(milestonesStorageKey, JSON.stringify(milestones));
+	} catch (error) {
+		console.warn('Albanuun milestones could not be saved.', error);
+	}
+}
+
+function getJourneyStages() {
+	const trimesterStages = [
+		{ name: 'First trimester', weeks: 'Weeks 1-13', description: 'The beginning of the shared journey.' },
+		{ name: 'Second trimester', weeks: 'Weeks 14-28', description: 'A middle stretch to notice and move through together.' },
+		{ name: 'Third trimester', weeks: 'Weeks 29-40', description: 'The final stretch toward meeting your baby.' },
+	];
+	const startOffsets = [-280, -182, -84];
+	return trimesterStages.map((stage, index) => ({
+		...stage,
+		index,
+		date: addCalendarDays(pregnancy.dueDate, startOffsets[index]),
+		status: index < pregnancy.trimester - 1 ? 'past' : index === pregnancy.trimester - 1 ? 'current' : 'upcoming',
+	}));
+}
+
+function createJourneyStage(stage) {
+	const item = document.createElement('li');
+	item.className = `journey-stage journey-stage-${stage.status}`;
+	const marker = document.createElement('span');
+	marker.className = 'journey-stage-marker';
+	marker.setAttribute('aria-hidden', 'true');
+	const content = document.createElement('div');
+	content.className = 'journey-stage-content';
+	const status = document.createElement('p');
+	status.className = 'journey-stage-status';
+	status.textContent = stage.status === 'current' ? 'You are here' : stage.status === 'past' ? 'Passed' : 'Ahead';
+	const title = document.createElement('h3');
+	title.textContent = stage.name;
+	const details = document.createElement('p');
+	details.className = 'journey-stage-details';
+	details.textContent = `${stage.weeks} · Begins ${formatDisplayDate(stage.date)}`;
+	const description = document.createElement('p');
+	description.className = 'journey-stage-description';
+	description.textContent = stage.description;
+	content.append(status, title, details, description);
+	item.append(marker, content);
+	return item;
+}
+
+function renderJourneyTimeline() {
+	const emptyState = document.querySelector('[data-journey-empty]');
+	const context = document.querySelector('[data-journey-context]');
+	const timeline = document.querySelector('#journey-timeline');
+	emptyState.hidden = pregnancy.isConfigured;
+	context.hidden = !pregnancy.isConfigured;
+	timeline.hidden = !pregnancy.isConfigured;
+	if (!pregnancy.isConfigured) {
+		return;
+	}
+
+	const stages = getJourneyStages();
+	const currentStage = stages[pregnancy.trimester - 1];
+	document.querySelector('[data-journey-current-title]').textContent = pregnancy.dueDatePassed
+		? 'The estimated due date has passed.'
+		: `${formatDuration(pregnancy.gestationalWeek, 'week')}, ${formatDuration(pregnancy.gestationalDay, 'day')} · ${currentStage.name}`;
+	document.querySelector('[data-journey-current-summary]').textContent = pregnancy.dueDatePassed
+		? 'The timeline stays here as a record of the journey. Take the next steps with your care team.'
+		: currentStage.description;
+	timeline.replaceChildren(...stages.map(createJourneyStage));
+}
+
+function createMilestoneItem(milestone) {
+	const item = document.createElement('article');
+	item.className = 'milestone-item';
+	const heading = document.createElement('div');
+	heading.className = 'milestone-heading';
+	const title = document.createElement('h3');
+	title.textContent = milestone.title;
+	const date = document.createElement('p');
+	date.className = 'milestone-date';
+	date.textContent = formatDisplayDate(parseDateInput(milestone.date));
+	heading.append(title, date);
+	item.append(heading);
+	if (milestone.note) {
+		const note = document.createElement('p');
+		note.className = 'milestone-note';
+		note.textContent = milestone.note;
+		item.append(note);
+	}
+	const actions = document.createElement('div');
+	actions.className = 'milestone-actions';
+	[
+		{ action: 'edit-milestone', label: 'Edit' },
+		{ action: 'delete-milestone', label: 'Delete' },
+	].forEach(({ action, label }) => {
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.className = action === 'delete-milestone' ? 'text-button danger-button' : 'text-button';
+		button.dataset.action = action;
+		button.dataset.id = milestone.id;
+		button.textContent = label;
+		actions.append(button);
+	});
+	item.append(actions);
+	return item;
+}
+
+function renderMilestones() {
+	const list = document.querySelector('#milestone-list');
+	const sortedMilestones = [...milestones].sort((first, second) => first.date.localeCompare(second.date));
+	list.replaceChildren(...sortedMilestones.map(createMilestoneItem));
+	document.querySelector('[data-milestone-empty]').hidden = sortedMilestones.length > 0;
+}
+
+function renderJourney() {
+	renderJourneyTimeline();
+	renderMilestones();
 }
 
 function getDadModeContent() {
@@ -583,11 +732,13 @@ function resetAllData() {
 	appointments = [];
 	checkins = [];
 	dadNote = '';
+	milestones = [];
 	refreshPregnancy();
 	renderHome();
 	renderAppointments();
 	renderCheckin();
 	renderDadMode();
+	renderJourney();
 	settingsDialog.close();
 	resetDialog.close();
 }
@@ -609,6 +760,7 @@ function saveSettings(event) {
 	refreshPregnancy();
 	renderHome();
 	renderDadMode();
+	renderJourney();
 
 	const saveMessage = document.querySelector('#save-message');
 	saveMessage.textContent = 'Details saved on this device.';
@@ -634,6 +786,53 @@ function setActiveView(viewName, careFeature = 'mom') {
 	if (viewName === 'care') {
 		setCareFeature(careFeature);
 	}
+}
+
+function openMilestoneForm(milestoneId = null) {
+	editingMilestoneId = milestoneId;
+	milestoneForm.reset();
+	const milestone = milestones.find((item) => item.id === milestoneId);
+	if (milestone) {
+		milestoneForm.elements.namedItem('title').value = milestone.title;
+		milestoneForm.elements.namedItem('date').value = milestone.date;
+		milestoneForm.elements.namedItem('note').value = milestone.note;
+	}
+	document.querySelector('#milestone-form-title').textContent = milestone ? 'Edit a first' : 'Add a first';
+	milestoneDialog.showModal();
+}
+
+function closeMilestoneForm() {
+	milestoneDialog.close();
+	editingMilestoneId = null;
+}
+
+function saveMilestone(event) {
+	event.preventDefault();
+	const formData = new FormData(milestoneForm);
+	const savedMilestone = {
+		id: editingMilestoneId || createAppointmentId(),
+		title: String(formData.get('title') || '').trim(),
+		date: String(formData.get('date') || ''),
+		note: String(formData.get('note') || '').trim(),
+	};
+	if (editingMilestoneId) {
+		milestones = milestones.map((milestone) => milestone.id === editingMilestoneId ? savedMilestone : milestone);
+	} else {
+		milestones.push(savedMilestone);
+	}
+	saveMilestones();
+	renderMilestones();
+	closeMilestoneForm();
+}
+
+function deleteMilestone(milestoneId) {
+	const milestone = milestones.find((item) => item.id === milestoneId);
+	if (!milestone || !window.confirm(`Delete "${milestone.title}"?`)) {
+		return;
+	}
+	milestones = milestones.filter((item) => item.id !== milestoneId);
+	saveMilestones();
+	renderMilestones();
 }
 
 function openAppointmentForm(appointmentId = null) {
@@ -774,6 +973,30 @@ appointmentDialog.addEventListener('click', (event) => {
 	}
 });
 
+document.querySelector('[data-action="add-milestone"]').addEventListener('click', () => openMilestoneForm());
+document.querySelectorAll('[data-action="close-milestone"]').forEach((button) => {
+	button.addEventListener('click', closeMilestoneForm);
+});
+milestoneForm.addEventListener('submit', saveMilestone);
+milestoneDialog.addEventListener('click', (event) => {
+	if (event.target === milestoneDialog) {
+		closeMilestoneForm();
+	}
+});
+
+journeyView.addEventListener('click', (event) => {
+	const button = event.target.closest('[data-action]');
+	if (!button) {
+		return;
+	}
+	if (button.dataset.action === 'edit-milestone') {
+		openMilestoneForm(button.dataset.id);
+	}
+	if (button.dataset.action === 'delete-milestone') {
+		deleteMilestone(button.dataset.id);
+	}
+});
+
 careView.addEventListener('click', (event) => {
 	const button = event.target.closest('[data-action]');
 	if (!button || !button.dataset.id) {
@@ -806,9 +1029,11 @@ loadSettings();
 loadAppointments();
 loadCheckins();
 loadDadNote();
+loadMilestones();
 refreshPregnancy();
 renderHome();
 renderDadMode();
+renderJourney();
 renderAppointments();
 renderCheckin();
 setActiveView('home');

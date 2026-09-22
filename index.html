@@ -24,6 +24,46 @@
 		</header>
 
 		<main id="app" class="app-main">
+			<section id="journey" class="journey-view" aria-labelledby="journey-title" data-view-section="journey" hidden>
+				<div class="journey-heading">
+					<p class="eyebrow">Journey</p>
+					<h1 id="journey-title">The journey, held close.</h1>
+					<p class="intro">A quiet view of where you are, and the moments you choose to remember.</p>
+				</div>
+
+				<section class="timeline-section" aria-labelledby="timeline-title">
+					<div class="section-heading">
+						<p class="section-label">Pregnancy timeline</p>
+						<h2 id="timeline-title">A little at a time.</h2>
+					</div>
+					<div class="journey-empty" data-journey-empty>
+						<p>Set an estimated due date in Settings and your place in the journey will appear here.</p>
+						<button class="primary-button" type="button" data-action="settings">Open Settings <span aria-hidden="true">&#8594;</span></button>
+					</div>
+					<div class="journey-current-context" data-journey-context hidden>
+						<p class="section-label">Your place now</p>
+						<h2 data-journey-current-title></h2>
+						<p data-journey-current-summary></p>
+					</div>
+					<ol id="journey-timeline" class="journey-timeline" aria-label="Pregnancy timeline" hidden></ol>
+				</section>
+
+				<section class="firsts-section" aria-labelledby="firsts-title">
+					<div class="journey-subheading">
+						<div>
+							<p class="section-label">Baby's firsts</p>
+							<h2 id="firsts-title">The moments you want to keep.</h2>
+						</div>
+						<button class="save-button" type="button" data-action="add-milestone">Add a first</button>
+					</div>
+					<div id="milestone-list" class="milestone-list"></div>
+					<div class="milestone-empty" data-milestone-empty>
+						<p>No firsts recorded yet.</p>
+						<p>First ultrasound, first heartbeat, first movement, or another moment that belongs to you.</p>
+					</div>
+				</section>
+			</section>
+
 			<section id="home" class="home-view" aria-labelledby="welcome-title" data-view-section="home">
 				<p class="eyebrow">Your shared journey</p>
 				<div id="home-setup" class="setup-panel" role="status" hidden>
@@ -264,6 +304,37 @@
 					<button class="save-button" type="submit">Save appointment</button>
 				</div>
 				<p class="save-message" id="appointment-save-message" role="status" aria-live="polite"></p>
+			</form>
+		</dialog>
+
+		<dialog class="milestone-dialog" id="milestone-dialog" aria-labelledby="milestone-form-title">
+			<div class="settings-header">
+				<div>
+					<p class="eyebrow">Baby's firsts</p>
+					<h2 id="milestone-form-title">Add a first</h2>
+				</div>
+				<button class="close-button" type="button" aria-label="Close milestone form" data-action="close-milestone">&times;</button>
+			</div>
+
+			<form id="milestone-form">
+				<input type="hidden" name="id">
+				<div class="form-field">
+					<label for="milestone-title">What happened?</label>
+					<input id="milestone-title" name="title" type="text" required maxlength="80" autocomplete="off">
+				</div>
+				<div class="form-field">
+					<label for="milestone-date">Date</label>
+					<input id="milestone-date" name="date" type="date" required>
+				</div>
+				<div class="form-field">
+					<label for="milestone-note">A short note <span>(optional)</span></label>
+					<textarea id="milestone-note" name="note" rows="3" maxlength="240"></textarea>
+				</div>
+				<div class="settings-actions">
+					<button class="secondary-button" type="button" data-action="close-milestone">Cancel</button>
+					<button class="save-button" type="submit">Save first</button>
+				</div>
+				<p class="save-message" id="milestone-save-message" role="status" aria-live="polite"></p>
 			</form>
 		</dialog>
 
