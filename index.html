@@ -91,6 +91,7 @@
 				</div>
 				<div class="care-switcher" role="tablist" aria-label="Care sections">
 					<button class="care-switcher-button active" type="button" role="tab" aria-selected="true" data-action="show-mom">For Mom</button>
+					<button class="care-switcher-button" type="button" role="tab" aria-selected="false" data-action="show-dad">Dad Mode</button>
 					<button class="care-switcher-button" type="button" role="tab" aria-selected="false" data-action="show-appointments">Appointments</button>
 				</div>
 
@@ -139,6 +140,49 @@
 						<p class="list-empty" data-checkin-empty>No check-ins recorded yet.</p>
 					</div>
 					<button class="primary-button care-feature-link" type="button" data-action="show-appointments">Open Appointments <span aria-hidden="true">&#8594;</span></button>
+				</section>
+
+				<section class="dad-mode-section" aria-labelledby="dad-mode-title" data-care-feature="dad" hidden>
+					<div class="section-heading">
+						<p class="section-label">Dad Mode</p>
+						<h2 id="dad-mode-title" data-dad-mode-heading>Stay close to what matters today.</h2>
+						<p class="section-supporting-copy" data-dad-mode-intro></p>
+					</div>
+
+					<section class="dad-mode-block" aria-labelledby="dad-understand-title">
+						<div class="dad-context" aria-label="Current pregnancy context">
+							<div><span class="section-label">Mom</span><strong data-dad-mom-name>Not set</strong></div>
+							<div><span class="section-label">Now</span><strong data-dad-pregnancy-age>Not set</strong></div>
+							<div><span class="section-label">Trimester</span><strong data-dad-trimester>Not set</strong></div>
+						</div>
+						<h3 id="dad-understand-title">Understand</h3>
+						<p data-dad-understanding>Set an estimated due date in Settings to see guidance for this stage.</p>
+						<div class="dad-need">
+							<p class="section-label">What Mom may need</p>
+							<p data-dad-mom-need>For now, start by asking what would make today feel a little easier.</p>
+						</div>
+					</section>
+
+					<section class="dad-mode-block" aria-labelledby="dad-support-title">
+						<h3 id="dad-support-title">Support</h3>
+						<ul class="dad-actions-list" data-dad-actions></ul>
+					</section>
+
+					<section class="dad-mode-block dad-notes-block" aria-labelledby="dad-remember-title">
+						<h3 id="dad-remember-title">Remember</h3>
+						<p class="section-supporting-copy">Keep small details that help you show up well. These notes stay on this device.</p>
+						<form id="dad-note-form" class="dad-note-form">
+							<div class="form-field">
+								<label for="dad-note">Private notes <span>(optional)</span></label>
+								<textarea id="dad-note" name="note" rows="6" maxlength="1000" placeholder="Things Mom likes, what helped, reminders..."></textarea>
+							</div>
+							<div class="settings-actions">
+								<button class="secondary-button" type="button" data-action="clear-dad-note">Clear</button>
+								<button class="save-button" type="submit">Save note</button>
+							</div>
+							<p class="save-message" id="dad-note-save-message" role="status" aria-live="polite"></p>
+						</form>
+					</section>
 				</section>
 
 				<section class="care-appointments" aria-labelledby="appointments-title" data-care-feature="appointments" hidden>

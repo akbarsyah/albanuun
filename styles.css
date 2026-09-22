@@ -140,6 +140,22 @@ h2 { margin-bottom: 9px; font-family: Newsreader, Georgia, serif; font-size: 1.4
 .checkin-history-item h4 { margin: 0; font-family: Newsreader, Georgia, serif; font-size: 1.25rem; font-weight: 600; }
 .checkin-history-needs, .checkin-history-note { margin: 7px 0 0; color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
 .checkin-history-note { color: var(--ink); }
+.dad-mode-section { padding-bottom: 38px; }
+.dad-mode-block { padding: 28px 0 30px; border-bottom: 1px solid var(--line); }
+.dad-mode-block h3 { margin: 0 0 14px; font-family: Newsreader, Georgia, serif; font-size: 1.45rem; font-weight: 600; }
+.dad-context { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; padding: 17px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.dad-context > div { min-width: 0; }
+.dad-context .section-label { margin-bottom: 7px; }
+.dad-context strong { display: block; font-size: 0.82rem; font-weight: 600; line-height: 1.35; }
+.dad-mode-block > p:not(.section-supporting-copy), .dad-need p:last-child { max-width: 490px; margin-bottom: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.65; }
+.dad-need { margin-top: 25px; padding-left: 16px; border-left: 2px solid var(--sand); }
+.dad-need .section-label { margin-bottom: 7px; }
+.dad-actions-list { display: grid; gap: 13px; margin: 0; padding: 0 0 0 21px; color: var(--ink); font-size: 0.9rem; line-height: 1.5; }
+.dad-actions-list li::marker { color: var(--sage); }
+.dad-notes-block { border-bottom: 0; }
+.dad-note-form { margin-top: 22px; }
+.dad-note-form .settings-actions { justify-content: flex-start; }
+.dad-note-form .save-message { text-align: left; }
 .care-feature-link { margin-top: 22px; }
 .care-appointments { padding-top: 38px; }
 .care-subheading { display: flex; align-items: end; justify-content: space-between; gap: 20px; }

@@ -10,6 +10,7 @@ const appState = {
 const storageKey = 'albanuun.settings';
 const appointmentsStorageKey = 'albanuun.appointments';
 const checkinsStorageKey = 'albanuun.checkins';
+const dadNoteStorageKey = 'albanuun.dad-note';
 const views = {
 	home: document.querySelector('#home'),
 	care: document.querySelector('#care'),
@@ -23,11 +24,13 @@ const homeSetup = document.querySelector('#home-setup');
 const homeContent = document.querySelector('#home-content');
 const setupNote = document.querySelector('#setup-note');
 const checkinForm = document.querySelector('#checkin-form');
+const dadNoteForm = document.querySelector('#dad-note-form');
 const forMomSection = document.querySelector('#for-mom');
 let pregnancy = null;
 let appointments = [];
 let checkins = [];
 let editingAppointmentId = null;
+let dadNote = '';
 
 function getDateParts(date) {
 	return {
@@ -165,6 +168,76 @@ function saveCheckins() {
 	} catch (error) {
 		console.warn('Albanuun check-ins could not be saved.', error);
 	}
+}
+
+function loadDadNote() {
+	try {
+		const savedNote = localStorage.getItem(dadNoteStorageKey);
+		dadNote = typeof savedNote === 'string' ? savedNote : '';
+	} catch (error) {
+		console.warn('Albanuun Dad Mode note could not be loaded.', error);
+	}
+}
+
+function saveDadNote() {
+	try {
+		localStorage.setItem(dadNoteStorageKey, dadNote);
+	} catch (error) {
+		console.warn('Albanuun Dad Mode note could not be saved.', error);
+	}
+}
+
+function getDadModeContent() {
+	if (!pregnancy.isConfigured) {
+		return {
+			understanding: 'Set an estimated due date in Settings to see guidance for this stage.',
+			need: 'For now, start by asking what would make today feel a little easier.',
+			actions: ['Ask how she is feeling and listen before offering solutions.', 'Take one practical task off her plate today.', 'Add helpful details to your private notes.'],
+		};
+	}
+
+	const contentByTrimester = {
+		1: {
+			understanding: 'Early pregnancy can bring changeable energy and emotions. A steady, low-pressure presence may matter more than having answers.',
+			need: 'Patience, rest, simple food or water, and space to have a slower day.',
+			actions: ['Ask what sounds manageable before making plans.', 'Keep easy food and water within reach.', 'Take over one ordinary task without waiting to be asked.'],
+		},
+		2: {
+			understanding: 'The middle months can feel more settled, while new discomforts and appointments become part of the rhythm. Keep making room for her changing energy.',
+			need: 'Practical help, comfortable plans, and someone who remembers the small details.',
+			actions: ['Check what kind of help would be useful today.', 'Plan outings with time to pause and get comfortable.', 'Keep appointment questions or reminders somewhere easy to find.'],
+		},
+		3: {
+			understanding: 'Later pregnancy often asks more of her body and attention. Being prepared and easy to reach can make everyday decisions lighter.',
+			need: 'More rest, comfort, flexibility, and calm help with preparation.',
+			actions: ['Keep plans flexible around rest and comfort.', 'Work through one birth or hospital preparation task together.', 'Confirm the practical details for the next appointment.'],
+		},
+	};
+	return contentByTrimester[pregnancy.trimester] || contentByTrimester[3];
+}
+
+function renderDadMode() {
+	const content = getDadModeContent();
+	const dadName = appState.dadName || 'Dad';
+	document.querySelector('[data-dad-mode-heading]').textContent = pregnancy.isConfigured
+		? `A little guidance for ${dadName}.`
+		: 'Stay close to what matters today.';
+	document.querySelector('[data-dad-mode-intro]').textContent = appState.momName
+		? `A private, practical place to support ${appState.momName} through this stage.`
+		: 'A private, practical place to support Mom through this stage.';
+	document.querySelector('[data-dad-mom-name]').textContent = appState.momName || 'Not set';
+	document.querySelector('[data-dad-pregnancy-age]').textContent = pregnancy.isConfigured
+		? `${formatDuration(pregnancy.gestationalWeek, 'week')}, ${formatDuration(pregnancy.gestationalDay, 'day')}`
+		: 'Not set';
+	document.querySelector('[data-dad-trimester]').textContent = pregnancy.isConfigured ? `Trimester ${pregnancy.trimester}` : 'Not set';
+	document.querySelector('[data-dad-understanding]').textContent = content.understanding;
+	document.querySelector('[data-dad-mom-need]').textContent = content.need;
+	document.querySelector('[data-dad-actions]').replaceChildren(...content.actions.map((action) => {
+		const item = document.createElement('li');
+		item.textContent = action;
+		return item;
+	}));
+	dadNoteForm.elements.namedItem('note').value = dadNote;
 }
 
 function getTodayCheckin() {
@@ -433,17 +506,34 @@ function renderHome() {
 }
 
 function setCareFeature(featureName) {
-	const isMom = featureName === 'mom';
 	document.querySelectorAll('[data-care-feature]').forEach((feature) => {
 		feature.hidden = feature.dataset.careFeature !== featureName;
 	});
-	document.querySelectorAll('[data-action="show-mom"], [data-action="show-appointments"]').forEach((button) => {
-		const isSelected = (isMom && button.dataset.action === 'show-mom') || (!isMom && button.dataset.action === 'show-appointments');
+	document.querySelectorAll('.care-switcher-button').forEach((button) => {
+		const isSelected = button.dataset.action === `show-${featureName}`;
 		if (button.classList.contains('care-switcher-button')) {
 			button.classList.toggle('active', isSelected);
 			button.setAttribute('aria-selected', isSelected ? 'true' : 'false');
 		}
 	});
+}
+
+function saveDadNoteFromForm(event) {
+	event.preventDefault();
+	dadNote = String(new FormData(dadNoteForm).get('note') || '').trim();
+	saveDadNote();
+	const message = document.querySelector('#dad-note-save-message');
+	message.textContent = 'Note saved on this device.';
+	window.setTimeout(() => { message.textContent = ''; }, 1800);
+}
+
+function clearDadNote() {
+	dadNote = '';
+	dadNoteForm.elements.namedItem('note').value = '';
+	saveDadNote();
+	const message = document.querySelector('#dad-note-save-message');
+	message.textContent = 'Note cleared.';
+	window.setTimeout(() => { message.textContent = ''; }, 1800);
 }
 
 function loadSettings() {
@@ -495,6 +585,7 @@ function saveSettings(event) {
 	}
 	refreshPregnancy();
 	renderHome();
+	renderDadMode();
 
 	const saveMessage = document.querySelector('#save-message');
 	saveMessage.textContent = 'Details saved on this device.';
@@ -617,6 +708,10 @@ document.querySelectorAll('[data-action="show-mom"]').forEach((button) => {
 	button.addEventListener('click', () => setCareFeature('mom'));
 });
 
+document.querySelectorAll('[data-action="show-dad"]').forEach((button) => {
+	button.addEventListener('click', () => setCareFeature('dad'));
+});
+
 document.querySelectorAll('[data-action="show-appointments"]').forEach((button) => {
 	button.addEventListener('click', () => setCareFeature('appointments'));
 });
@@ -672,12 +767,16 @@ document.querySelectorAll('[data-home-feeling]').forEach((button) => {
 });
 
 checkinForm.addEventListener('submit', saveTodayCheckin);
+dadNoteForm.addEventListener('submit', saveDadNoteFromForm);
+document.querySelector('[data-action="clear-dad-note"]').addEventListener('click', clearDadNote);
 
 loadSettings();
 loadAppointments();
 loadCheckins();
+loadDadNote();
 refreshPregnancy();
 renderHome();
+renderDadMode();
 renderAppointments();
 renderCheckin();
 setActiveView('home');
