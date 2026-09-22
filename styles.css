@@ -134,8 +134,9 @@ h2 { margin-bottom: 9px; font-family: Newsreader, Georgia, serif; font-size: 1.4
 .journey-stage-current .journey-stage-marker { width: 15px; height: 15px; top: 3px; left: -28px; border-color: var(--sage); background: var(--sage); box-shadow: 0 0 0 5px var(--ivory); }
 .journey-stage-status { margin: 0 0 7px; color: var(--muted); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
 .journey-stage-current .journey-stage-status { color: var(--sage); }
-.journey-stage h3 { margin: 0 0 7px; font-family: Newsreader, Georgia, serif; font-size: 1.45rem; font-weight: 600; }
-.journey-stage-details { margin: 0; color: var(--sage); font-size: 0.78rem; font-weight: 600; }
+.journey-stage h3 { margin: 0 0 5px; font-family: Newsreader, Georgia, serif; font-size: 1.45rem; font-weight: 600; }
+.journey-stage-weeks { margin: 0; color: var(--ink); font-size: 0.96rem; font-weight: 600; }
+.journey-stage-dates { margin: 4px 0 0; color: var(--muted); font-size: 0.76rem; line-height: 1.4; }
 .journey-stage-description { max-width: 400px; margin: 8px 0 0; color: var(--muted); font-size: 0.84rem; line-height: 1.55; }
 .journey-stage-past { opacity: 0.62; }
 .journey-subheading { display: flex; align-items: end; justify-content: space-between; gap: 20px; }

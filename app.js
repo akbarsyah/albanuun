@@ -231,17 +231,35 @@ function saveMilestones() {
 
 function getJourneyStages() {
 	const trimesterStages = [
-		{ name: 'First trimester', weeks: 'Weeks 1-13', description: 'The beginning of the shared journey.' },
-		{ name: 'Second trimester', weeks: 'Weeks 14-28', description: 'A middle stretch to notice and move through together.' },
-		{ name: 'Third trimester', weeks: 'Weeks 29-40', description: 'The final stretch toward meeting your baby.' },
+		{ name: 'First trimester', weeks: 'Weeks 1–13', description: 'The beginning of the shared journey.' },
+		{ name: 'Second trimester', weeks: 'Weeks 14–28', description: 'A middle stretch to notice and move through together.' },
+		{ name: 'Third trimester', weeks: 'Weeks 29–40', description: 'The final stretch toward meeting your baby.' },
 	];
 	const startOffsets = [-280, -182, -84];
-	return trimesterStages.map((stage, index) => ({
+	return trimesterStages.map((stage, index) => {
+		const startDate = addCalendarDays(pregnancy.dueDate, startOffsets[index]);
+		const endDate = index === startOffsets.length - 1
+			? pregnancy.dueDate
+			: addCalendarDays(pregnancy.dueDate, startOffsets[index + 1] - 1);
+		return {
 		...stage,
 		index,
-		date: addCalendarDays(pregnancy.dueDate, startOffsets[index]),
+		startDate,
+		endDate,
 		status: index < pregnancy.trimester - 1 ? 'past' : index === pregnancy.trimester - 1 ? 'current' : 'upcoming',
-	}));
+		};
+	});
+}
+
+function formatJourneyDateRange(stage) {
+	if (stage.index === 2) {
+		return `${formatDisplayDate(stage.startDate)} – estimated due date`;
+	}
+	const startYear = stage.startDate.getFullYear();
+	const endYear = stage.endDate.getFullYear();
+	const formatDateWithoutYear = (date) => new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(date);
+	const start = startYear === endYear ? formatDateWithoutYear(stage.startDate) : formatDisplayDate(stage.startDate);
+	return `${start} – ${formatDisplayDate(stage.endDate)}`;
 }
 
 function createJourneyStage(stage) {
@@ -257,13 +275,16 @@ function createJourneyStage(stage) {
 	status.textContent = stage.status === 'current' ? 'You are here' : stage.status === 'past' ? 'Passed' : 'Ahead';
 	const title = document.createElement('h3');
 	title.textContent = stage.name;
-	const details = document.createElement('p');
-	details.className = 'journey-stage-details';
-	details.textContent = `${stage.weeks} · Begins ${formatDisplayDate(stage.date)}`;
+	const weeks = document.createElement('p');
+	weeks.className = 'journey-stage-weeks';
+	weeks.textContent = stage.weeks;
+	const dates = document.createElement('p');
+	dates.className = 'journey-stage-dates';
+	dates.textContent = formatJourneyDateRange(stage);
 	const description = document.createElement('p');
 	description.className = 'journey-stage-description';
 	description.textContent = stage.description;
-	content.append(status, title, details, description);
+	content.append(status, title, weeks, dates, description);
 	item.append(marker, content);
 	return item;
 }
